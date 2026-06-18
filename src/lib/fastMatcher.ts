@@ -32,7 +32,9 @@ function bestCert(description: string, certs: CertRow[]): CertRow {
 }
 
 function isJapan(country: string): boolean {
-  return /japan|япони|^jp$|jpn/i.test(country.trim());
+  const c = country.trim();
+  if (c === '392') return true; // ISO 3166-1 numeric code for Japan
+  return /japan|япони|^jp$|jpn/i.test(c);
 }
 
 function normalizeHs(hs: string): string {
@@ -61,9 +63,9 @@ export function matchFast(
       return notRequired(item, country);
     }
 
-    // Rule 2: Non-Japan origin → Japanese certs don't apply
+    // Rule 2: Non-Japan origin → certification required but no cert in DB
     if (!isJapan(country)) {
-      return notRequired(item, country);
+      return notFound(item, country);
     }
 
     // Rule 3: Japan origin → must have certificate
@@ -88,18 +90,7 @@ export function matchFast(
     }
 
     // Not found
-    return {
-      index: item.index,
-      part_number: item.part_number,
-      hs_code: item.hs_code,
-      description: item.description,
-      country,
-      status: 'not_found',
-      cert_number: null,
-      cert_date: null,
-      cert_description: null,
-      confidence: 'low',
-    };
+    return notFound(item, country);
   });
 }
 
@@ -115,6 +106,21 @@ function found(item: ExtractedItem, country: string, cert: CertRow, confidence: 
     cert_date: cert.doc_date,
     cert_description: cert.product_name,
     confidence,
+  };
+}
+
+function notFound(item: ExtractedItem, country: string): MatchResult {
+  return {
+    index: item.index,
+    part_number: item.part_number,
+    hs_code: item.hs_code,
+    description: item.description,
+    country,
+    status: 'not_found',
+    cert_number: null,
+    cert_date: null,
+    cert_description: null,
+    confidence: 'low',
   };
 }
 
