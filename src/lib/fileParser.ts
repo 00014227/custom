@@ -100,6 +100,22 @@ function parseExcelPackingList(buffer: Buffer, _filename: string): ExtractedItem
   console.log(`[excel] sheets: ${wb.SheetNames.join(', ')}`);
   for (const sheetName of wb.SheetNames) {
     const sheet = wb.Sheets[sheetName];
+
+    // Fix truncated !ref — find actual max row from all cell addresses
+    const cellKeys = Object.keys(sheet).filter(k => !k.startsWith('!'));
+    if (cellKeys.length > 0) {
+      const maxRow = cellKeys.reduce((max, addr) => {
+        try { return Math.max(max, XLSX.utils.decode_cell(addr).r); } catch { return max; }
+      }, 0);
+      if (sheet['!ref']) {
+        const range = XLSX.utils.decode_range(sheet['!ref']);
+        if (maxRow > range.e.r) {
+          range.e.r = maxRow;
+          sheet['!ref'] = XLSX.utils.encode_range(range);
+        }
+      }
+    }
+
     const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: '' });
     console.log(`[excel] sheet="${sheetName}" rows=${rows.length}`);
     if (rows.length < 2) continue;
