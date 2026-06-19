@@ -97,9 +97,11 @@ function parseExcelPackingList(buffer: Buffer, _filename: string): ExtractedItem
   const wb = XLSX.read(buffer, { type: 'buffer', cellDates: true });
   const items: ExtractedItem[] = [];
 
+  console.log(`[excel] sheets: ${wb.SheetNames.join(', ')}`);
   for (const sheetName of wb.SheetNames) {
     const sheet = wb.Sheets[sheetName];
     const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: '' });
+    console.log(`[excel] sheet="${sheetName}" rows=${rows.length}`);
     if (rows.length < 2) continue;
 
     // Find header row
@@ -116,8 +118,9 @@ function parseExcelPackingList(buffer: Buffer, _filename: string): ExtractedItem
         qty: hdrs.findIndex(h => matchHdr(h, QTY_HEADERS)),
         country: hdrs.findIndex(h => matchHdr(h, COUNTRY_HEADERS)),
       };
-      // Strict: HS + name + at least one extra column
       const extra = [c.part, c.qty, c.country].filter(v => v !== -1).length;
+      console.log(`[excel] row[${i}] hs=${c.hs} name=${c.name} country=${c.country} part=${c.part} qty=${c.qty} extra=${extra} | sample: ${hdrs.slice(0, 6).join(' | ')}`);
+      // Strict: HS + name + at least one extra column
       if (c.hs !== -1 && c.name !== -1 && extra >= 1) {
         headerRow = i;
         cols = c;
@@ -133,6 +136,7 @@ function parseExcelPackingList(buffer: Buffer, _filename: string): ExtractedItem
       headerRow = relaxedCandidate.row;
       cols = relaxedCandidate.cols;
     }
+    console.log(`[excel] headerRow=${headerRow} cols=`, cols);
     if (headerRow === -1) continue;
 
     let idx = 0;
