@@ -2,7 +2,7 @@ import * as XLSX from 'xlsx';
 import type { ExtractedItem } from '../types';
 
 const HS_HEADERS = ['hs code', 'hs_code', 'hscode', 'код тн вэд', 'код тн', 'тн вэд', 'код'];
-const NAME_HEADERS = ['description', 'наименование', 'название', 'product', 'описание', 'товар'];
+const NAME_HEADERS = ['description', 'наименование', 'название', 'product', 'описание', 'товар', 'graf', 'граф', 'Описание1'];
 const PART_HEADERS = ['part', 'part-number', 'part number', 'part_number', 'артикул', 'номер детали'];
 const QTY_HEADERS = ['qty', 'quantity', 'кол', 'количество', 'qti'];
 const COUNTRY_HEADERS = ['country', 'страна', 'origin', 'country of origin', 'country of origine'];
@@ -106,6 +106,7 @@ function parseExcelPackingList(buffer: Buffer, _filename: string): ExtractedItem
     let headerRow = -1;
     let cols = { hs: -1, name: -1, part: -1, qty: -1, country: -1 };
 
+    let relaxedCandidate: { row: number; cols: typeof cols } | null = null;
     for (let i = 0; i < Math.min(50, rows.length); i++) {
       const hdrs = (rows[i] as unknown[]).map(cellStr);
       const c = {
@@ -115,13 +116,22 @@ function parseExcelPackingList(buffer: Buffer, _filename: string): ExtractedItem
         qty: hdrs.findIndex(h => matchHdr(h, QTY_HEADERS)),
         country: hdrs.findIndex(h => matchHdr(h, COUNTRY_HEADERS)),
       };
-      // Require BOTH HS code and description columns, plus at least one more
+      // Strict: HS + name + at least one extra column
       const extra = [c.part, c.qty, c.country].filter(v => v !== -1).length;
       if (c.hs !== -1 && c.name !== -1 && extra >= 1) {
         headerRow = i;
         cols = c;
         break;
       }
+      // Relaxed fallback: just HS + name (save first match, use if strict fails)
+      if (c.hs !== -1 && c.name !== -1 && !relaxedCandidate) {
+        relaxedCandidate = { row: i, cols: c };
+      }
+    }
+    // Use relaxed match if strict detection found nothing
+    if (headerRow === -1 && relaxedCandidate) {
+      headerRow = relaxedCandidate.row;
+      cols = relaxedCandidate.cols;
     }
     if (headerRow === -1) continue;
 
