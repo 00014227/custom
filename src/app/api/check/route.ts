@@ -26,15 +26,20 @@ export async function POST(req: NextRequest) {
     }
 
     const parsed = await parseUploadedFile(buffer, file.name, file.type);
+    console.log(`[parse] type=${parsed.type} file="${file.name}"`);
 
     let items;
     if (parsed.type === 'structured') {
       items = parsed.items;
+      console.log(`[parse] structured: ${items.length} items, first=`, items[0]);
     } else {
+      console.log(`[parse] raw: text length=${parsed.text?.length ?? 0}, has base64=${!!parsed.base64}`);
+      if (parsed.text) console.log(`[parse] raw text preview:\n${parsed.text.slice(0, 500)}`);
       if (!parsed.text && !parsed.base64) {
         return NextResponse.json({ error: 'Не удалось прочитать содержимое файла' }, { status: 400 });
       }
       items = await extractItemsFromRaw(parsed);
+      console.log(`[parse] AI extracted: ${items?.length ?? 0} items`);
       if (!items || items.length === 0) {
         return NextResponse.json({ error: 'Не удалось извлечь товары из файла' }, { status: 400 });
       }

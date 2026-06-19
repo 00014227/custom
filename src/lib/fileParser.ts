@@ -2,7 +2,7 @@ import * as XLSX from 'xlsx';
 import type { ExtractedItem } from '../types';
 
 const HS_HEADERS = ['hs code', 'hs_code', 'hscode', 'код тн вэд', 'код тн', 'тн вэд', 'код'];
-const NAME_HEADERS = ['description', 'наименование', 'название', 'product', 'описание', 'товар', 'graf', 'граф', 'Описание1'];
+const NAME_HEADERS = ['description', 'наименование', 'название', 'product', 'описание', 'товар', 'graf', 'граф', 'Описание1', 'Описание 1'];
 const PART_HEADERS = ['part', 'part-number', 'part number', 'part_number', 'артикул', 'номер детали'];
 const QTY_HEADERS = ['qty', 'quantity', 'кол', 'количество', 'qti'];
 const COUNTRY_HEADERS = ['country', 'страна', 'origin', 'country of origin', 'country of origine'];
